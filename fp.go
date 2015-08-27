@@ -5,16 +5,23 @@ package gofp
 // Pipeline is a single-direction channel.
 type Pipeline <-chan interface{}
 
-// NewPipeline create a new Pipeline instances.
-func NewPipeline(vs ...interface{}) Pipeline {
-	pl := make(chan interface{}, 1)
+// New creates a new Pipeline instances.
+func New(f func(ch chan<- interface{})) Pipeline {
+	out := make(chan interface{}, 1)
 	go func() {
-		defer close(pl)
-		for _, v := range vs {
-			pl <- v
-		}
+		defer close(out)
+		f(out)
 	}()
-	return pl
+	return out
+}
+
+// ForEach creates a new Pipeline instances.
+func ForEach(vs ...interface{}) Pipeline {
+	return New(func(ch chan<- interface{}) {
+		for _, v := range vs {
+			ch <- v
+		}
+	})
 }
 
 // TakeAll returns all values in Pipeline.

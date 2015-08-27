@@ -52,7 +52,7 @@ func TestFilter(t *testing.T) {
 }
 
 func TestReduce(t *testing.T) {
-	result := NewPipeline(1, 2, 3, 4, 5).Reduce(
+	result := ForEach(1, 2, 3, 4, 5).Reduce(
 		func(v1, v2 interface{}) interface{} {
 			return v1.(int) + v2.(int)
 		}, 0)
@@ -62,7 +62,7 @@ func TestReduce(t *testing.T) {
 }
 
 func BenchmarkMap(b *testing.B) {
-	pl := NewPipeline(1, 2, 3, 4)
+	pl := ForEach(1, 2, 3, 4)
 
 	b.ResetTimer()
 	b.ReportAllocs()
@@ -79,7 +79,7 @@ func BenchmarkMap(b *testing.B) {
 }
 
 func BenchmarkFilter(b *testing.B) {
-	pl := NewPipeline(1, 2, 3, 4, 5)
+	pl := ForEach(1, 2, 3, 4, 5)
 	b.ResetTimer()
 	b.ReportAllocs()
 
@@ -93,7 +93,7 @@ func BenchmarkFilter(b *testing.B) {
 }
 
 func BenchmarkReduce(b *testing.B) {
-	pl := NewPipeline(1, 2, 3, 4, 5)
+	pl := ForEach(1, 2, 3, 4, 5)
 	b.ResetTimer()
 	b.ReportAllocs()
 
