@@ -29,7 +29,7 @@ func TestMap(t *testing.T) {
 		},
 		func(v interface{}) interface{} {
 			return v.(int) * 2
-		}).Values()
+		}).TakeAll()
 
 	for i, v := range values {
 		if v.(int) != (i+2)*2 {
@@ -43,7 +43,7 @@ func TestFilter(t *testing.T) {
 		func(v interface{}) bool {
 			return v.(int)%2 == 0
 		}).
-		Values()
+		TakeAll()
 	for _, v := range values {
 		if v.(int)%2 != 0 {
 			t.Errorf("%d", v)
@@ -74,7 +74,7 @@ func BenchmarkMap(b *testing.B) {
 			},
 			func(v interface{}) interface{} {
 				return v.(int) * 2
-			}).Values()
+			}).TakeAll()
 	}
 }
 
@@ -88,7 +88,7 @@ func BenchmarkFilter(b *testing.B) {
 			func(v interface{}) bool {
 				return v.(int)%2 == 0
 			}).
-			Values()
+			TakeAll()
 	}
 }
 

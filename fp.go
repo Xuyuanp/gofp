@@ -17,8 +17,8 @@ func NewPipeline(vs ...interface{}) Pipeline {
 	return pl
 }
 
-// Values returns all values in Pipeline.
-func (pl Pipeline) Values() []interface{} {
+// TakeAll returns all values in Pipeline.
+func (pl Pipeline) TakeAll() []interface{} {
 	var values []interface{}
 	for v := range pl {
 		values = append(values, v)
