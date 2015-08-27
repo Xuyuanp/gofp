@@ -24,6 +24,28 @@ func ForEach(vs ...interface{}) Pipeline {
 	})
 }
 
+// Range returns a new Pipeline which contains
+// from start to end integer values.
+func Range(start, end int) Pipeline {
+	return RangeStep(start, end, 1)
+}
+
+// RangeStep returns a new Pipeline which contains
+// from start to end by step integer values.
+func RangeStep(start, end, step int) Pipeline {
+	return New(func(out chan<- interface{}) {
+		if step > 0 {
+			for i := start; i < end; i += step {
+				out <- i
+			}
+		} else {
+			for i := start; i > end; i += step {
+				out <- i
+			}
+		}
+	})
+}
+
 // TakeAll returns all values in Pipeline.
 func (pl Pipeline) TakeAll() []interface{} {
 	var values []interface{}
@@ -40,8 +62,8 @@ func (pl Pipeline) Take(n int) []interface{} {
 	}
 	var values []interface{}
 	for v := range pl {
-		n--
 		values = append(values, v)
+		n--
 		if n <= 0 {
 			break
 		}
@@ -49,22 +71,28 @@ func (pl Pipeline) Take(n int) []interface{} {
 	return values
 }
 
+// Drop ignores the first n elements in Pipeline and
+// returns itself.
+func (pl Pipeline) Drop(n int) Pipeline {
+	for i := 0; i < n; i++ {
+		<-pl
+	}
+	return pl
+}
+
 // MapFunc functions processes each element in Pipeline.
 type MapFunc func(interface{}) interface{}
 
 // Map passes each element in Pipeline into MapFunc.
 func (pl Pipeline) Map(fs ...MapFunc) Pipeline {
-	out := make(chan interface{}, 1)
-	go func() {
-		defer close(out)
+	return New(func(out chan<- interface{}) {
 		for i := range pl {
 			for _, f := range fs {
 				i = f(i)
 			}
 			out <- i
 		}
-	}()
-	return out
+	})
 }
 
 // FilterFunc ignores all the elements which returns false.
@@ -72,16 +100,13 @@ type FilterFunc func(interface{}) bool
 
 // Filter drops all the invalid elements in Pipeline.
 func (pl Pipeline) Filter(f FilterFunc) Pipeline {
-	out := make(chan interface{}, 1)
-	go func() {
-		defer close(out)
+	return New(func(out chan<- interface{}) {
 		for i := range pl {
 			if f(i) {
 				out <- i
 			}
 		}
-	}()
-	return out
+	})
 }
 
 // ReduceFunc reduces 2 elements into a single one.
@@ -94,19 +119,4 @@ func (pl Pipeline) Reduce(f ReduceFunc, init interface{}) interface{} {
 		result = f(i, result)
 	}
 	return result
-}
-
-func Range(start, end int) Pipeline {
-	return RangeStep(start, end, 1)
-}
-
-func RangeStep(start, end, step int) Pipeline {
-	out := make(chan interface{}, 1)
-	go func() {
-		defer close(out)
-		for i := start; i < end; i += step {
-			out <- i
-		}
-	}()
-	return out
 }

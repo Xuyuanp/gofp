@@ -22,6 +22,40 @@ func TestTake(t *testing.T) {
 	}
 }
 
+func TestDrop(t *testing.T) {
+	pl := Range(0, 10)
+	pl.Drop(5)
+	rest := pl.TakeAll()
+	if len(rest) != 5 {
+		t.Errorf("want %d got %d", 5, len(rest))
+	}
+}
+
+func TestRange(t *testing.T) {
+	all := Range(0, 10).TakeAll()
+	for i, v := range all {
+		if v.(int) != i {
+			t.Errorf("want %d got %d", i, v)
+		}
+	}
+}
+
+func TestRangeStep(t *testing.T) {
+	all := RangeStep(0, 10, 1).TakeAll()
+	for i, v := range all {
+		if v.(int) != i {
+			t.Errorf("want %d got %d", i, v)
+		}
+	}
+
+	all = RangeStep(10, 0, -1).TakeAll()
+	for i, v := range all {
+		if v.(int) != 10-i {
+			t.Errorf("want %d got %d", 10-i, v)
+		}
+	}
+}
+
 func TestMap(t *testing.T) {
 	values := Range(1, 5).Map(
 		func(v interface{}) interface{} {
