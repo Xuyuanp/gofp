@@ -88,3 +88,18 @@ func (pl Pipeline) Reduce(f ReduceFunc, init interface{}) interface{} {
 	}
 	return result
 }
+
+func Range(start, end int) Pipeline {
+	return RangeStep(start, end, 1)
+}
+
+func RangeStep(start, end, step int) Pipeline {
+	out := make(chan interface{}, 1)
+	go func() {
+		defer close(out)
+		for i := start; i < end; i += step {
+			out <- i
+		}
+	}()
+	return out
+}

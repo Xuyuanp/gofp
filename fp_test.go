@@ -3,7 +3,7 @@ package gofp
 import "testing"
 
 func TestTake(t *testing.T) {
-	pl := NewPipeline(1, 2, 3, 4, 5)
+	pl := Range(1, 6)
 	values := pl.Take(0)
 	if values != nil {
 		t.Errorf("want %s got %s", nil, values)
@@ -23,7 +23,7 @@ func TestTake(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	values := NewPipeline(1, 2, 3, 4).Map(
+	values := Range(1, 5).Map(
 		func(v interface{}) interface{} {
 			return v.(int) + 1
 		},
@@ -39,7 +39,7 @@ func TestMap(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	values := NewPipeline(1, 2, 3, 4, 5).Filter(
+	values := Range(1, 6).Filter(
 		func(v interface{}) bool {
 			return v.(int)%2 == 0
 		}).
