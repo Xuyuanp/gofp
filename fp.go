@@ -26,6 +26,22 @@ func (pl Pipeline) Values() []interface{} {
 	return values
 }
 
+// Take takes the first `n` elements from Pipeline.
+func (pl Pipeline) Take(n int) []interface{} {
+	if n <= 0 {
+		return nil
+	}
+	var values []interface{}
+	for v := range pl {
+		n--
+		values = append(values, v)
+		if n <= 0 {
+			break
+		}
+	}
+	return values
+}
+
 // MapFunc functions processes each element in Pipeline.
 type MapFunc func(interface{}) interface{}
 

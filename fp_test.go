@@ -2,6 +2,26 @@ package gofp
 
 import "testing"
 
+func TestTake(t *testing.T) {
+	pl := NewPipeline(1, 2, 3, 4, 5)
+	values := pl.Take(0)
+	if values != nil {
+		t.Errorf("want %s got %s", nil, values)
+	}
+	values = pl.Take(1)
+	if values == nil || len(values) == 0 {
+		t.Errorf("take 1 got empty array")
+	}
+	if values[0].(int) != 1 {
+		t.Errorf("first element not equal to %d", 1)
+	}
+
+	values = pl.Take(5)
+	if len(values) != 4 {
+		t.Errorf("want %d got %d", 4, len(values))
+	}
+}
+
 func TestMap(t *testing.T) {
 	values := NewPipeline(1, 2, 3, 4).Map(
 		func(v interface{}) interface{} {
