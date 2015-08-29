@@ -22,6 +22,18 @@ func TestTake(t *testing.T) {
 	}
 }
 
+func TestFirst(t *testing.T) {
+	pl := Range(1, 2)
+	first := pl.First()
+	if first.(int) != 1 {
+		t.Errorf("want %d got %d", 1, first)
+	}
+	first = pl.First()
+	if first != nil {
+		t.Errorf("want %v got %v", nil, first)
+	}
+}
+
 func TestDrop(t *testing.T) {
 	pl := Range(0, 10)
 	pl.Drop(5)

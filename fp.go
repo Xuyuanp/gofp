@@ -71,6 +71,14 @@ func (pl Pipeline) Take(n int) []interface{} {
 	return values
 }
 
+// First takes the first element in Pipeline and returns.
+func (pl Pipeline) First() interface{} {
+	for v := range pl {
+		return v
+	}
+	return nil
+}
+
 // Drop ignores the first n elements in Pipeline and
 // returns itself.
 func (pl Pipeline) Drop(n int) Pipeline {
