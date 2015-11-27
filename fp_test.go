@@ -69,13 +69,11 @@ func TestRangeStep(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
-	values := Range(1, 5).Map(
-		func(v interface{}) interface{} {
-			return v.(int) + 1
-		},
-		func(v interface{}) interface{} {
-			return v.(int) * 2
-		}).TakeAll()
+	values := Range(1, 5).Map(func(i int) int {
+		return i + 1
+	}).Map(func(i int) int {
+		return i * 2
+	}).TakeAll()
 
 	for i, v := range values {
 		if v.(int) != (i+2)*2 {
@@ -85,11 +83,9 @@ func TestMap(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	values := Range(1, 6).Filter(
-		func(v interface{}) bool {
-			return v.(int)%2 == 0
-		}).
-		TakeAll()
+	values := Range(1, 6).Filter(func(i int) bool {
+		return i%2 == 0
+	}).TakeAll()
 	for _, v := range values {
 		if v.(int)%2 != 0 {
 			t.Errorf("%d", v)
@@ -98,12 +94,22 @@ func TestFilter(t *testing.T) {
 }
 
 func TestReduce(t *testing.T) {
-	result := ForEach(1, 2, 3, 4, 5).Reduce(
-		func(v1, v2 interface{}) interface{} {
-			return v1.(int) + v2.(int)
-		}, 0)
+	result := ForEach(1, 2, 3, 4, 5).Reduce(func(i, j int) int {
+		return i + j
+	}, 0)
 	if result.(int) != 15 {
 		t.Error("want %d got %d", 15, result)
+	}
+}
+
+func TestMaybe(t *testing.T) {
+	inc := func(i int) int { return i + 1 }
+	if res := Nothing.Map(inc); res != Nothing {
+		t.Errorf("want Nothing got %s", res)
+	}
+
+	if res := Just(1).Map(inc); res.v != Just(2).v {
+		t.Errorf("want %s got %s", Just(2), res)
 	}
 }
 
@@ -114,13 +120,11 @@ func BenchmarkMap(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		pl.Map(
-			func(v interface{}) interface{} {
-				return v.(int) + 1
-			},
-			func(v interface{}) interface{} {
-				return v.(int) * 2
-			}).TakeAll()
+		pl.Map(func(i int) int {
+			return i + 1
+		}).Map(func(i int) int {
+			return i * 2
+		}).TakeAll()
 	}
 }
 
@@ -130,11 +134,9 @@ func BenchmarkFilter(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		pl.Filter(
-			func(v interface{}) bool {
-				return v.(int)%2 == 0
-			}).
-			TakeAll()
+		pl.Filter(func(i int) bool {
+			return i%2 == 0
+		}).TakeAll()
 	}
 }
 
@@ -144,9 +146,8 @@ func BenchmarkReduce(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		pl.Reduce(
-			func(v1, v2 interface{}) interface{} {
-				return v1.(int) + v2.(int)
-			}, 0)
+		pl.Reduce(func(i, j int) int {
+			return i + j
+		}, 0)
 	}
 }
