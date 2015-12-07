@@ -115,6 +115,12 @@ func (pl Pipeline) Drop(n int) Pipeline {
 	return pl
 }
 
+// DropAll drops all values in Pipeline.
+func (pl Pipeline) DropAll() {
+	for _ = range pl {
+	}
+}
+
 // MapFunc functions processes each element in Pipeline.
 type MapFunc struct {
 	in  reflect.Type
