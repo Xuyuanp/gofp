@@ -78,6 +78,14 @@ func TestRange(t *testing.T) {
 	}
 }
 
+func TestFromArray(t *testing.T) {
+	array := []interface{}{1, 2, 3, 4}
+	all := FromArray(array).TakeAll()
+	if !compareSlice(all, array) {
+		t.Errorf("want %v got %v", array, all)
+	}
+}
+
 func TestMap(t *testing.T) {
 	values := Range(1, 5).Map(func(i int) int {
 		return i + 1

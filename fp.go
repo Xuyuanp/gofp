@@ -31,6 +31,20 @@ func ForEach(vs ...interface{}) Pipeline {
 	})
 }
 
+// FromArray new Pipeline from any array or slice.
+func FromArray(array interface{}) Pipeline {
+	at := reflect.TypeOf(array)
+	av := reflect.ValueOf(array)
+	if at.Kind() != reflect.Array && at.Kind() != reflect.Slice {
+		panic("need slice or array")
+	}
+	return New(func(ch chan<- interface{}) {
+		for i := 0; i < av.Len(); i++ {
+			ch <- av.Index(i).Interface()
+		}
+	})
+}
+
 // Range returns a new Pipeline which contains
 // from start to end integer values.
 func Range(init int, r ...int) Pipeline {
