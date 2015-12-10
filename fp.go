@@ -33,22 +33,38 @@ func ForEach(vs ...interface{}) Pipeline {
 
 // Range returns a new Pipeline which contains
 // from start to end integer values.
-func Range(start, end int) Pipeline {
-	return RangeStep(start, end, 1)
+func Range(init int, r ...int) Pipeline {
+	switch len(r) {
+	case 0:
+		return RangeStep(0, init)
+	case 1:
+		return RangeStep(init, r[0])
+	case 2:
+		return RangeStep(init, r[0], r[1])
+	default:
+		return nil
+	}
+}
+
+func abs(i int) int {
+	if i < 0 {
+		return -i
+	}
+	return i
 }
 
 // RangeStep returns a new Pipeline which contains
 // from start to end by step integer values.
-func RangeStep(start, end, step int) Pipeline {
+func RangeStep(start, end int, steps ...int) Pipeline {
+	step := 1
+	if len(steps) > 0 {
+		step = steps[0]
+	}
+	t := end - start
+	s := step * (t / abs(t))
 	return New(func(out chan<- interface{}) {
-		if step > 0 {
-			for i := start; i < end; i += step {
-				out <- i
-			}
-		} else {
-			for i := start; i > end; i += step {
-				out <- i
-			}
+		for i := 0; abs(i) < abs(t); i += s {
+			out <- start + i
 		}
 	})
 }

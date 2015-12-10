@@ -43,27 +43,37 @@ func TestDrop(t *testing.T) {
 	}
 }
 
-func TestRange(t *testing.T) {
-	all := Range(0, 10).TakeAll()
-	for i, v := range all {
-		if v.(int) != i {
-			t.Errorf("want %d got %d", i, v)
+func compareSlice(s1, s2 []interface{}) bool {
+	if len(s1) != len(s2) {
+		return false
+	}
+	for i := 0; i < len(s1); i++ {
+		if s1[i] != s2[i] {
+			return false
 		}
 	}
+	return true
 }
 
-func TestRangeStep(t *testing.T) {
-	all := RangeStep(0, 10, 1).TakeAll()
-	for i, v := range all {
-		if v.(int) != i {
-			t.Errorf("want %d got %d", i, v)
-		}
+func TestRange(t *testing.T) {
+	cases := []struct {
+		init   int
+		args   []int
+		result []interface{}
+	}{
+		{4, nil, []interface{}{0, 1, 2, 3}},
+		{0, []int{4}, []interface{}{0, 1, 2, 3}},
+		{1, []int{4}, []interface{}{1, 2, 3}},
+		{0, []int{4, 2}, []interface{}{0, 2}},
+		{-4, nil, []interface{}{0, -1, -2, -3}},
+		{0, []int{-4}, []interface{}{0, -1, -2, -3}},
+		{-1, []int{-4}, []interface{}{-1, -2, -3}},
+		{0, []int{-4, 2}, []interface{}{0, -2}},
 	}
 
-	all = RangeStep(10, 0, -1).TakeAll()
-	for i, v := range all {
-		if v.(int) != 10-i {
-			t.Errorf("want %d got %d", 10-i, v)
+	for _, c := range cases {
+		if all := Range(c.init, c.args...).TakeAll(); !compareSlice(all, c.result) {
+			t.Errorf("want %v got %v", c.result, all)
 		}
 	}
 }
