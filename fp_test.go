@@ -141,7 +141,7 @@ func TestFunc(t *testing.T) {
 		"1a2",
 		"12b",
 	}
-	FromArray(array).Filter(NewFunc(strings.Contains).Flip().Curry("a").ToFilterFunc().Not()).Map(func(s string) string {
+	FromArray(array).Filter(NewFunc(strings.Contains).FlipCurry("a").ToFilterFunc().Not()).Map(func(s string) string {
 		if strings.Contains(s, "a") {
 			t.Errorf("no char %s in %s", "a", s)
 		}

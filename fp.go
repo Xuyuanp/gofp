@@ -270,58 +270,77 @@ func NewFunc(f interface{}) Func {
 	}
 }
 
+// Call applies args to Func
 func (f Func) Call(args ...interface{}) reflect.Value {
 	return f(args...)
 }
 
+// Curry returns a new Func with a default first arg
 func (f Func) Curry(v interface{}) Func {
 	return func(args ...interface{}) reflect.Value {
 		return f.Call(append([]interface{}{v}, args...)...)
 	}
 }
 
+// Flip args
 func (f Func) Flip() Func {
 	return func(args ...interface{}) reflect.Value {
 		return f.Call(args[1], args[0])
 	}
 }
 
+// FlipCurry is a fast method to call Flip an Curry, as this
+// situiation is very common in daily use.
+func (f Func) FlipCurry(v interface{}) Func {
+	return f.Flip().Curry(v)
+}
+
+// MapFunc type
 type MapFunc func(interface{}) interface{}
 
+// Map easy method
 func (mf MapFunc) Map(v interface{}) interface{} {
 	return mf(v)
 }
 
+// ToMapFunc converts Func to MapFunc
 func (f Func) ToMapFunc() MapFunc {
 	return func(v interface{}) interface{} {
 		return f.Call(v).Interface()
 	}
 }
 
+// FilterFunc type
 type FilterFunc func(interface{}) bool
 
+// Filter easy method
 func (ff FilterFunc) Filter(v interface{}) bool {
 	return ff(v)
 }
 
+// Not reverses FilterFunc
 func (ff FilterFunc) Not() FilterFunc {
 	return func(v interface{}) bool {
 		return !ff.Filter(v)
 	}
 }
 
+// ToFilterFunc converts Func to FilterFunc
 func (f Func) ToFilterFunc() FilterFunc {
 	return func(v interface{}) bool {
 		return f.Call(v).Bool()
 	}
 }
 
+// ReduceFunc type
 type ReduceFunc func(v1, v2 interface{}) interface{}
 
+// Reduce easy method
 func (rf ReduceFunc) Reduce(v1, v2 interface{}) interface{} {
 	return rf(v1, v2)
 }
 
+// ToReduceFunc converts Func to ReduceFunc
 func (f Func) ToReduceFunc() ReduceFunc {
 	return func(v1, v2 interface{}) interface{} {
 		return f.Call(v1, v2).Interface()
