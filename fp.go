@@ -151,37 +151,19 @@ func (pl Pipeline) DropAll() {
 	}
 }
 
-// MapFunc functions processes each element in Pipeline.
-type MapFunc struct {
-	in  reflect.Type
-	out reflect.Type
-	f   func(interface{}) interface{}
-}
-
-// Map calls inner func in MapFunc.
-func (f *MapFunc) Map(v interface{}) interface{} {
-	return f.f(v)
-}
-
-func newMapFunc(f interface{}) *MapFunc {
-	tf := reflect.TypeOf(f)
-	vf := reflect.ValueOf(f)
-	if tf.Kind() != reflect.Func {
-		panic("not a function")
-	}
-	return &MapFunc{
-		in:  tf.In(0),
-		out: tf.Out(0),
-		f: func(x interface{}) interface{} {
-			out := vf.Call([]reflect.Value{reflect.ValueOf(x)})
-			return out[0].Interface()
-		},
-	}
-}
-
 // Map passes each element in Pipeline into MapFunc.
 func (pl Pipeline) Map(f interface{}) Pipeline {
-	mf := newMapFunc(f)
+	var mf MapFunc
+	switch ft := f.(type) {
+	case func(interface{}) interface{}:
+		mf = MapFunc(ft)
+	case MapFunc:
+		mf = ft
+	case Func:
+		mf = ft.ToMapFunc()
+	default:
+		mf = NewFunc(f).ToMapFunc()
+	}
 	return New(func(out chan<- interface{}) {
 		for i := range pl {
 			out <- mf.Map(i)
@@ -189,38 +171,19 @@ func (pl Pipeline) Map(f interface{}) Pipeline {
 	})
 }
 
-// FilterFunc ignores all the elements which returns false.
-type FilterFunc struct {
-	in reflect.Type
-	f  func(interface{}) bool
-}
-
-// Filter calls inner func of FilterFunc
-func (f *FilterFunc) Filter(v interface{}) bool {
-	return f.f(v)
-}
-
-func newFilterFunc(f interface{}) *FilterFunc {
-	tf := reflect.TypeOf(f)
-	vf := reflect.ValueOf(f)
-	if tf.Kind() != reflect.Func {
-		panic("not a function")
-	}
-	if tf.NumOut() != 1 || tf.Out(0).Kind() != reflect.Bool {
-		panic("return type is not bool")
-	}
-	return &FilterFunc{
-		in: tf.In(0),
-		f: func(x interface{}) bool {
-			out := vf.Call([]reflect.Value{reflect.ValueOf(x)})
-			return out[0].Bool()
-		},
-	}
-}
-
 // Filter drops all the invalid elements in Pipeline.
 func (pl Pipeline) Filter(f interface{}) Pipeline {
-	ff := newFilterFunc(f)
+	var ff FilterFunc
+	switch ft := f.(type) {
+	case func(interface{}) bool:
+		ff = FilterFunc(ft)
+	case FilterFunc:
+		ff = ft
+	case Func:
+		ff = ft.ToFilterFunc()
+	default:
+		ff = NewFunc(f).ToFilterFunc()
+	}
 	return New(func(out chan<- interface{}) {
 		for i := range pl {
 			if ff.Filter(i) {
@@ -230,48 +193,19 @@ func (pl Pipeline) Filter(f interface{}) Pipeline {
 	})
 }
 
-// ReduceFunc reduces 2 elements into a single one.
-type ReduceFunc struct {
-	in1 reflect.Type
-	in2 reflect.Type
-	out reflect.Type
-	f   func(interface{}, interface{}) interface{}
-}
-
-// Reduce calls inner function of ReduceFunc.
-func (f *ReduceFunc) Reduce(v1, v2 interface{}) interface{} {
-	return f.f(v1, v2)
-}
-
-func newReduceFunc(f interface{}) *ReduceFunc {
-	tf := reflect.TypeOf(f)
-	vf := reflect.ValueOf(f)
-	if tf.Kind() != reflect.Func {
-		panic("not a function")
-	}
-	if tf.NumIn() != 2 {
-		panic("require 2 params")
-	}
-	if tf.NumOut() != 1 {
-		panic("require 1 return value")
-	}
-	if tf.In(1) != tf.Out(0) {
-		panic("types of param 2 and return value doesn't match")
-	}
-	return &ReduceFunc{
-		in1: tf.In(0),
-		in2: tf.In(1),
-		out: tf.Out(0),
-		f: func(v1, v2 interface{}) interface{} {
-			out := vf.Call([]reflect.Value{reflect.ValueOf(v1), reflect.ValueOf(v2)})
-			return out[0].Interface()
-		},
-	}
-}
-
 // Reduce reduces all elements in Pipeline to a final result.
 func (pl Pipeline) Reduce(f interface{}, init interface{}) interface{} {
-	rf := newReduceFunc(f)
+	var rf ReduceFunc
+	switch ft := f.(type) {
+	case func(interface{}, interface{}) interface{}:
+		rf = ReduceFunc(rf)
+	case ReduceFunc:
+		rf = ft
+	case Func:
+		rf = ft.ToReduceFunc()
+	default:
+		rf = NewFunc(f).ToReduceFunc()
+	}
 	result := init
 	for i := range pl {
 		result = rf.Reduce(i, result)
@@ -297,11 +231,19 @@ func Just(v interface{}) *Maybe {
 
 // Map applies func to value in Maybe context
 func (m *Maybe) Map(f interface{}) *Maybe {
-	mf := newMapFunc(f)
 	if m == Nothing {
 		return Nothing
 	}
-	return Just(mf.Map(m.v))
+	var mf func(interface{}) interface{}
+	switch ft := f.(type) {
+	case func(interface{}) interface{}:
+		mf = ft
+	case Func:
+		mf = ft.ToMapFunc()
+	default:
+		mf = NewFunc(f).ToMapFunc()
+	}
+	return Just(mf(m.v))
 }
 
 func (m *Maybe) String() string {
@@ -310,4 +252,78 @@ func (m *Maybe) String() string {
 	}
 
 	return fmt.Sprintf("Just %v", m.v)
+}
+
+// Func type
+type Func func(...interface{}) reflect.Value
+
+// NewFunc create a new Func.
+func NewFunc(f interface{}) Func {
+	return func(args ...interface{}) reflect.Value {
+		fv := reflect.ValueOf(f)
+		var vargs []reflect.Value
+		for _, arg := range args {
+			vargs = append(vargs, reflect.ValueOf(arg))
+		}
+		results := fv.Call(vargs)
+		return results[0]
+	}
+}
+
+func (f Func) Call(args ...interface{}) reflect.Value {
+	return f(args...)
+}
+
+func (f Func) Curry(v interface{}) Func {
+	return func(args ...interface{}) reflect.Value {
+		return f.Call(append([]interface{}{v}, args...)...)
+	}
+}
+
+func (f Func) Flip() Func {
+	return func(args ...interface{}) reflect.Value {
+		return f.Call(args[1], args[0])
+	}
+}
+
+type MapFunc func(interface{}) interface{}
+
+func (mf MapFunc) Map(v interface{}) interface{} {
+	return mf(v)
+}
+
+func (f Func) ToMapFunc() MapFunc {
+	return func(v interface{}) interface{} {
+		return f.Call(v).Interface()
+	}
+}
+
+type FilterFunc func(interface{}) bool
+
+func (ff FilterFunc) Filter(v interface{}) bool {
+	return ff(v)
+}
+
+func (ff FilterFunc) Not() FilterFunc {
+	return func(v interface{}) bool {
+		return !ff.Filter(v)
+	}
+}
+
+func (f Func) ToFilterFunc() FilterFunc {
+	return func(v interface{}) bool {
+		return f.Call(v).Bool()
+	}
+}
+
+type ReduceFunc func(v1, v2 interface{}) interface{}
+
+func (rf ReduceFunc) Reduce(v1, v2 interface{}) interface{} {
+	return rf(v1, v2)
+}
+
+func (f Func) ToReduceFunc() ReduceFunc {
+	return func(v1, v2 interface{}) interface{} {
+		return f.Call(v1, v2).Interface()
+	}
 }

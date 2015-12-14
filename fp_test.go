@@ -1,6 +1,9 @@
 package gofp
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestTake(t *testing.T) {
 	pl := Range(1, 6)
@@ -129,6 +132,21 @@ func TestMaybe(t *testing.T) {
 	if res := Just(1).Map(inc); res.v != Just(2).v {
 		t.Errorf("want %s got %s", Just(2), res)
 	}
+}
+
+func TestFunc(t *testing.T) {
+	array := []string{
+		"123",
+		"abc",
+		"1a2",
+		"12b",
+	}
+	FromArray(array).Filter(NewFunc(strings.Contains).Flip().Curry("a").ToFilterFunc().Not()).Map(func(s string) string {
+		if strings.Contains(s, "a") {
+			t.Errorf("no char %s in %s", "a", s)
+		}
+		return s
+	}).DropAll()
 }
 
 func BenchmarkMap(b *testing.B) {
