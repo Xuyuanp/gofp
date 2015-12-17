@@ -194,7 +194,7 @@ func (pl Pipeline) Filter(f interface{}) Pipeline {
 }
 
 // Reduce reduces all elements in Pipeline to a final result.
-func (pl Pipeline) Reduce(f interface{}, init interface{}) interface{} {
+func (pl Pipeline) Reduce(f, init interface{}) interface{} {
 	var rf ReduceFunc
 	switch ft := f.(type) {
 	case func(interface{}, interface{}) interface{}:
@@ -234,16 +234,30 @@ func (m *Maybe) Map(f interface{}) *Maybe {
 	if m == Nothing {
 		return Nothing
 	}
-	var mf func(interface{}) interface{}
+	var mf MapFunc
 	switch ft := f.(type) {
 	case func(interface{}) interface{}:
+		mf = MapFunc(ft)
+	case MapFunc:
 		mf = ft
 	case Func:
 		mf = ft.ToMapFunc()
 	default:
 		mf = NewFunc(f).ToMapFunc()
 	}
-	return Just(mf(m.v))
+	return Just(mf.Map(m.v))
+}
+
+// Join removes one leve of Just.
+func (m *Maybe) Join() *Maybe {
+	if m == Nothing {
+		return Nothing
+	}
+	in, ok := m.v.(*Maybe)
+	if ok {
+		return in
+	}
+	return m
 }
 
 func (m *Maybe) String() string {
@@ -276,23 +290,23 @@ func (f Func) Call(args ...interface{}) reflect.Value {
 }
 
 // Curry returns a new Func with a default first arg
-func (f Func) Curry(v interface{}) Func {
+func (f Func) Curry(vs ...interface{}) Func {
 	return func(args ...interface{}) reflect.Value {
-		return f.Call(append([]interface{}{v}, args...)...)
+		return f.Call(append(vs, args...)...)
 	}
 }
 
 // Flip args
 func (f Func) Flip() Func {
 	return func(args ...interface{}) reflect.Value {
-		return f.Call(args[1], args[0])
+		return f.Call(append(args[1:], args[0])...)
 	}
 }
 
 // FlipCurry is a fast method to call Flip an Curry, as this
 // situiation is very common in daily use.
-func (f Func) FlipCurry(v interface{}) Func {
-	return f.Flip().Curry(v)
+func (f Func) FlipCurry(vs ...interface{}) Func {
+	return f.Flip().Curry(vs...)
 }
 
 // MapFunc type
@@ -301,6 +315,13 @@ type MapFunc func(interface{}) interface{}
 // Map easy method
 func (mf MapFunc) Map(v interface{}) interface{} {
 	return mf(v)
+}
+
+// LiftMaybe lifts normal func processing Maybe type
+func (mf MapFunc) LiftMaybe() MapFunc {
+	return NewFunc(func(m *Maybe) *Maybe {
+		return m.Map(mf).Join()
+	}).ToMapFunc()
 }
 
 // ToMapFunc converts Func to MapFunc
@@ -345,4 +366,9 @@ func (f Func) ToReduceFunc() ReduceFunc {
 	return func(v1, v2 interface{}) interface{} {
 		return f.Call(v1, v2).Interface()
 	}
+}
+
+// NothingFilter is a FilterFunc to fuck all Nothing value
+var NothingFilter = func(m *Maybe) bool {
+	return m != Nothing
 }
